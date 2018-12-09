@@ -1,90 +1,198 @@
-// --------------------------------------------
-// <-- Setup API Keys -->
+// <-- Setup -->
 
 // Require process.env variables
 require("dotenv").config();
 
-// Store keys sent from .env file
+// Store API keys sent from .env file
 var keys = require("./keys.js");
 
-console.log("Keys :", keys);
+// Require node-spotify-api
+var Spotify = require("node-spotify-api");
 
-// --------------------------------------------
-// <-- Store & Log Command Line Arguments -->
+// Create spotify credentials object
+var spotify = new Spotify(keys.spotify);
 
-cli = process.argv.slice(2);
-console.log(cli);
+// Require Axios
+var axios = require("axios");
 
-// --------------------------------------------
+// Require moment
+var moment = require("moment");
+
+// Require node file system
+var fs = require("fs");
+
+// Divider string
+var divider = "\n======================================================\n";
+
+// -----------------------------------------------------------------------
+
+// <-- Store Command Line Arguments -->
+
+var args = process.argv.slice(2);
+
+var command = args[0];
+
+var query = args.slice(1).join(" ");
+
+// Determine Command & execute with query as argument
+commandSelect(command, query);
+
+// -----------------------------------------------------------------------
+
 // <-- LIRI Commands -->
 
-// concert-this <artist or band>
+// 1. concert-this
+function concert(query) {
+  url =
+    "https://rest.bandsintown.com/artists/" +
+    query +
+    "/events?app_id=codingbootcamp";
+  console.log("query URL: " + url + "\n");
+  axios
+    .get(url)
+    .then(function(response) {
+      var data = response.data;
+      for (i = 0; i < data.length; i++) {
+        var concert = data[i];
+        var venue = concert.venue;
+        var venueName = venue.name;
+        var location = [venue.city, venue.country];
+        var datetime = concert.datetime;
+        var date = moment(datetime, moment.ISO_8601).format(
+          "dddd MMMM Do, YYYY"
+        );
 
-// Query bands in town api via axios
-// return:
-// name of venue
-// venue location
-// date of event (moment.js) MM/DD/YYYY
-// default functionality left open...
-// return syntax explanation
-// return sample query of trending event
+        console.log(divider);
+        console.log("Venue: " + venueName);
+        console.log("In: " + location.join(", "));
+        console.log("On: " + date + "\n");
+        console.log(divider);
+      }
+    })
+    .catch(function(error) {
+      console.log(error);
+    });
+}
 
-// spotify-this-song <title>
-// Query spotify api via node package
-// return:
-// artist(s)
-// title
-// link to spotify preview
-// album
+// 2. spotify-this-song
+function song(query) {
+  spotify.search(
+    {
+      type: "track",
+      query: query,
+      limit: 1
+    },
+    function(err, data) {
+      if (err) {
+        return console.log("Error occurred: " + err);
+      }
+      var songData = data.tracks.items[0];
+      var artistsArr = [];
+      for (i = 0; i < songData.artists.length; i++) {
+        artistsArr.push(songData.artists[i].name);
+      }
+      var artists = artistsArr.join(", ");
+      var name = songData.name;
+      var preview_url = songData.preview_url;
+      var album = songData.album.name;
 
-// movie-this <title>
+      console.log(divider);
+      console.log("Song: " + name);
+      console.log("Artist(s): " + artists);
+      console.log("Album: " + album);
+      console.log("Preview URL: " + preview_url);
+      console.log(divider);
+    }
+  );
+}
 
-// Query OMDB via axios
-// return:
-// title
-// release year
-// IMDB rating
-// rotten tomatoes rating
-// country of production
-// language
-// plot
-// actors
+// 3. movie-this
+function movie(query) {
+  url = "http://www.omdbapi.com/?t=" + query + "&y=&plot=short&apikey=trilogy";
+  axios
+    .get(url)
+    .then(function(response) {
+      var movie = response.data;
+      var title = movie.Title;
+      var released = movie.Released;
+      var IMDB = movie.Ratings[0].Value;
+      var RT = movie.Ratings[1].Value;
+      var country = movie.Country;
+      var language = movie.Language;
+      var plot = movie.Plot;
+      var actors = movie.Actors;
 
-// do-what-it-says
+      console.log(divider);
 
-// Read command from random.txt file
-// via fs node package
+      console.log("Title: " + title + "\n");
+      console.log("Released: " + released + "\n");
+      console.log("Internet Movie Database Rating: " + IMDB);
+      console.log("Rotten Tomatoes Rating: " + RT + "\n");
+      console.log("Country of Production: " + country);
+      console.log("Language(s): " + language + "\n");
+      console.log("Plot Summary: " + "\n\n" + plot + "\n");
+      console.log("Actors: " + actors + "\n");
 
-/*  LIRI Bot PseudoCode
+      console.log(divider);
+    })
+    .catch(function(error) {
+      console.log(error);
+    });
+}
 
-    1. node liri.js <command> <query> 
-        - parse command line arguments
-        - format and store command & query
+// 4. do-what-it-says
+function readCommand() {
+  fs.readFile("random.txt", "utf8", function(error, data) {
+    if (error) {
+      return console.log(error);
+    }
+    cmd = data.split(",")[0];
+    arg = data.split(",")[1];
+    commandSelect(cmd, arg);
+  });
+}
 
-    2. pass query as argument to selected command
-        - command(query)
+// -----------------------------------------------------------------------
 
-    3. command function queries relevant API 
-        - concert(query)
-          - Axios -> Bands in Town
+// <-- Command Selection -->
+function commandSelect(cmd, arg) {
+  switch (cmd) {
+    // Concert function
+    case "concert-this":
+      concert(arg);
+      break;
 
-        - spotify(query) 
-          - Node -> Spotify
+    // Song function
+    case "spotify-this-song":
+      if (arg == "") {
+        // default to "The Sign" by Ace of Base
+        arg = "The Sign - Ace of Base";
+      }
+      song(arg);
+      break;
 
-        - movie(query) 
-          - Axios -> Open Movie Database
+    // Movie function
+    case "movie-this":
+      if (arg == "") {
+        // default to "Mr. Nobody"
+        arg = "Mr. Nobody";
+      }
+      movie(arg);
+      break;
 
-        - do-what-it-says
-          - use fs to read command from random.txt
+    // Read-in function
+    case "do-what-it-says":
+      readCommand();
+      break;
 
-    4. parse response object
-
-    5. format response data 
-
-    5. console.log data 
-
-    6. write command, query & result to log.text
-
-
-  
-*/
+    // Invalid command
+    default:
+      console.log(divider);
+      console.log("Invalid command, possible commands are:\n");
+      console.log("   concert-this <query>");
+      console.log("   spotify-this-song <query>");
+      console.log("   movie-this <query>");
+      console.log("   do-what-it-says");
+      console.log(divider);
+  }
+}
