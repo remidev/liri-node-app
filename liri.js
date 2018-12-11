@@ -81,7 +81,6 @@ function concert(query) {
     "https://rest.bandsintown.com/artists/" +
     query +
     "/events?app_id=codingbootcamp";
-  console.log("query URL: " + url + "\n");
   axios
     .get(url)
     .then(function(response) {
