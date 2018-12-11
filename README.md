@@ -42,6 +42,6 @@ The movie command queries the Open Movie Database API, again via Axios. It retur
 
 # ReadCommand
 
-The read command uses the node file system package to read the contents of the random.txt file included in the repository. It relies on the content of the file being formated as command,query.
+The read command uses the node file system package to read the contents of the random.txt file included in the repository. It attempts to parse and command and query from the file, then executes that command with the included query. It relies on the content of the file being formated properly as: command,query.
 
 ![Read command](LIRI-4.gif)
