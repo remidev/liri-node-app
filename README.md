@@ -1,6 +1,6 @@
 # LIRI Bot
 
-## Language Interpretation and Recognition Interface
+Language Interpretation and Recognition Interface
 
 ## Project Description:
 
@@ -28,11 +28,11 @@ The concert command queries the Bands in Town API via the Axios node package and
 
 The song command queries the Spotify API via the node-spotify-api Node package. It returns information about the song that most closely matches the query.
 
+![Song command](LIRI-2.gif)
+
 ### Note:
 
 This command will not function unless after cloning the repository you create your own .env file and add to it your own spotify API credentials.
-
-![Song command](LIRI-2.gif)
 
 # Movie
 
@@ -40,7 +40,7 @@ The movie command queries the Open Movie Database API, again via Axios. It retur
 
 ![Movie command](LIRI-3.gif)
 
-# Read
+# ReadCommand
 
 The read command uses the node file system package to read the contents of the random.txt file included in the repository. It relies on the content of the file being formated as command,query.
 
