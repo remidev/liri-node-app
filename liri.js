@@ -1,47 +1,81 @@
-// <-- Setup -->
-
+// <-- SETUP NODE PACKAGES & GLOBALS -->
 // Require process.env variables
 require("dotenv").config();
-
 // Store API keys sent from .env file
 var keys = require("./keys.js");
-
 // Require node-spotify-api
 var Spotify = require("node-spotify-api");
-
 // Create spotify credentials object
 var spotify = new Spotify(keys.spotify);
-
 // Require Axios
 var axios = require("axios");
-
 // Require moment
 var moment = require("moment");
-
 // Require node file system
 var fs = require("fs");
-
 // Divider string
 var divider = "\n======================================================\n";
+// ________________________________________________________________________
 
-// -----------------------------------------------------------------------
-
-// <-- Store Command Line Arguments -->
-
+// <-- STORE COMMAND LINE ARGUMENTS -->
 var args = process.argv.slice(2);
-
 var command = args[0];
-
 var query = args.slice(1).join(" ");
+// ________________________________________________________________________
 
-// Determine Command & execute with query as argument
+// <-- CALL MAIN FUNCTION -->
 commandSelect(command, query);
+// ________________________________________________________________________
 
-// -----------------------------------------------------------------------
+// <-- COMMAND SELECT -->
+function commandSelect(cmd, arg) {
+  switch (cmd) {
+    // Concert function
+    case "concert":
+      concert(arg);
+      break;
 
-// <-- LIRI Commands -->
+    // Song function
+    case "song":
+      if (arg == "") {
+        // default to "The Sign" by Ace of Base
+        arg = "The Sign - Ace of Base";
+      }
+      song(arg);
+      break;
 
-// 1. concert-this
+    // Movie function
+    case "movie":
+      if (arg == "") {
+        // default to "Mr. Nobody"
+        arg = "Mr. Nobody";
+      }
+      movie(arg);
+      break;
+
+    // Read-in function from random.txt
+    case "readCommand":
+      readCommand();
+      break;
+
+    // No command or invalid command
+    default:
+      console.log(divider);
+      console.log("Invalid command, possible commands are:\n");
+      console.log("   concert <query>");
+      console.log("   song <query>");
+      console.log("   movie <query>");
+      console.log("   readCommand\n");
+      console.log("For Example:\n");
+      console.log("   node liri.js song Blood ANIMA!");
+      console.log(divider);
+  }
+}
+// ________________________________________________________________________
+
+// <-- LIRI COMMANDS -->
+
+// 1. concert
 function concert(query) {
   url =
     "https://rest.bandsintown.com/artists/" +
@@ -51,6 +85,7 @@ function concert(query) {
   axios
     .get(url)
     .then(function(response) {
+      // parse data from response
       var data = response.data;
       for (i = 0; i < data.length; i++) {
         var concert = data[i];
@@ -61,7 +96,7 @@ function concert(query) {
         var date = moment(datetime, moment.ISO_8601).format(
           "dddd MMMM Do, YYYY"
         );
-
+        // print data
         console.log(divider);
         console.log("Venue: " + venueName);
         console.log("In: " + location.join(", "));
@@ -74,7 +109,7 @@ function concert(query) {
     });
 }
 
-// 2. spotify-this-song
+// 2. song
 function song(query) {
   spotify.search(
     {
@@ -86,6 +121,7 @@ function song(query) {
       if (err) {
         return console.log("Error occurred: " + err);
       }
+      // parse data from response
       var songData = data.tracks.items[0];
       var artistsArr = [];
       for (i = 0; i < songData.artists.length; i++) {
@@ -95,7 +131,7 @@ function song(query) {
       var name = songData.name;
       var preview_url = songData.preview_url;
       var album = songData.album.name;
-
+      // print data
       console.log(divider);
       console.log("Song: " + name);
       console.log("Artist(s): " + artists);
@@ -106,12 +142,13 @@ function song(query) {
   );
 }
 
-// 3. movie-this
+// 3. movie
 function movie(query) {
   url = "http://www.omdbapi.com/?t=" + query + "&y=&plot=short&apikey=trilogy";
   axios
     .get(url)
     .then(function(response) {
+      // parse data from response
       var movie = response.data;
       var title = movie.Title;
       var released = movie.Released;
@@ -121,9 +158,8 @@ function movie(query) {
       var language = movie.Language;
       var plot = movie.Plot;
       var actors = movie.Actors;
-
+      // print data
       console.log(divider);
-
       console.log("Title: " + title + "\n");
       console.log("Released: " + released + "\n");
       console.log("Internet Movie Database Rating: " + IMDB);
@@ -132,7 +168,6 @@ function movie(query) {
       console.log("Language(s): " + language + "\n");
       console.log("Plot Summary: " + "\n\n" + plot + "\n");
       console.log("Actors: " + actors + "\n");
-
       console.log(divider);
     })
     .catch(function(error) {
@@ -140,7 +175,7 @@ function movie(query) {
     });
 }
 
-// 4. do-what-it-says
+// 4. readCommand
 function readCommand() {
   fs.readFile("random.txt", "utf8", function(error, data) {
     if (error) {
@@ -148,51 +183,8 @@ function readCommand() {
     }
     cmd = data.split(",")[0];
     arg = data.split(",")[1];
+    // call command select recursively
     commandSelect(cmd, arg);
   });
 }
-
-// -----------------------------------------------------------------------
-
-// <-- Command Selection -->
-function commandSelect(cmd, arg) {
-  switch (cmd) {
-    // Concert function
-    case "concert-this":
-      concert(arg);
-      break;
-
-    // Song function
-    case "spotify-this-song":
-      if (arg == "") {
-        // default to "The Sign" by Ace of Base
-        arg = "The Sign - Ace of Base";
-      }
-      song(arg);
-      break;
-
-    // Movie function
-    case "movie-this":
-      if (arg == "") {
-        // default to "Mr. Nobody"
-        arg = "Mr. Nobody";
-      }
-      movie(arg);
-      break;
-
-    // Read-in function
-    case "do-what-it-says":
-      readCommand();
-      break;
-
-    // Invalid command
-    default:
-      console.log(divider);
-      console.log("Invalid command, possible commands are:\n");
-      console.log("   concert-this <query>");
-      console.log("   spotify-this-song <query>");
-      console.log("   movie-this <query>");
-      console.log("   do-what-it-says");
-      console.log(divider);
-  }
-}
+// ________________________________________________________________________
